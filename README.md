@@ -2,19 +2,12 @@
 
 Human vs LLM PICO Extraction & Screening Experiment.
 
-## Changes in this version
-- ⏱  **Timer hidden** — time-on-task still recorded silently but never shown to annotators
-- ✍  **Highlighting fixed** — PDF.js text layer makes PDF text genuinely selectable; click and drag to highlight
-- 🔒  **Secure hosting** — token-based access control + admin dashboard with one-click CSV exports
-
----
-
 ## Quick Start (local, no auth)
 
 ```bash
 pip install flask flask-cors gunicorn
 
-cd synergy_app
+cd Study-Screening-Tool
 
 # Optional: drop PDFs into papers/  named  PSY-04.pdf  MED-01.pdf  etc.
 
@@ -25,57 +18,7 @@ python app.py
 
 ---
 
-## Secure Hosting on Railway (recommended — free, HTTPS, persistent disk)
-
-### 1. Create account
-https://railway.app — free tier is enough for a research experiment.
-
-### 2. Install CLI and deploy
-```bash
-npm install -g @railway/cli
-railway login
-cd synergy_app
-railway init      # new project
-railway up        # deploys
-```
-
-### 3. Set environment variables (Railway dashboard → Variables)
-
-| Variable | Value |
-|---|---|
-| `ACCESS_TOKEN` | Token you share with students, e.g. `synergy-ucsf-2025` |
-| `ADMIN_TOKEN` | Long random string only you know |
-| `FLASK_SECRET` | Random 32-char string for session cookies |
-
-Generate tokens:
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-Or via CLI:
-```bash
-railway variables set ACCESS_TOKEN="synergy-ucsf-2025"
-railway variables set ADMIN_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-railway variables set FLASK_SECRET="$(python -c 'import secrets; print(secrets.token_hex(32))')"
-```
-
-### 4. Add persistent disk (keeps the database across redeploys)
-Railway dashboard → your service → Settings → Volumes → Add Volume
-- Mount path: `/app`
-- Size: 1 GB (free tier includes this)
-
-### 5. Share with students
-Your URL: `https://your-project.up.railway.app`
-
-Students simply visit the URL, enter their name/email/role, and start annotating.
-The access token is invisible to them — it's embedded in the session when they visit.
-
-If you want to gate access, tell students to enter `ACCESS_TOKEN` on first visit
-(you can add a simple token-entry screen if needed, or just share the token alongside the URL).
-
----
-
-## Alternative: ngrok (quickest for a single-day session)
+## Use ngrok (quickest for a single-day session)
 
 ```bash
 python app.py &
