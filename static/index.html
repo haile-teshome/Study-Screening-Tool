@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYNERGY Annotation Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--card:#22263a;--border:#2e3352;
+  --accent:#5b8dee;--success:#3ecf8e;--warn:#f5a623;--danger:#f25f5c;
+  --text:#e8eaf6;--muted:#7b82a0;
+  --font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;
+  --cP:#3ecf8e;--cI:#5b8dee;--cC:#f5a623;--cO:#f25f5c;
+  --cSD:#c084fc;--cSS:#67e8f9;--cM:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;height:100vh}
+.lbox{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:44px 38px;width:400px;max-width:95vw}
+.lbox h1{font-size:21px;font-weight:600;margin-bottom:4px}
+.lbox .sub{color:var(--muted);font-size:12px;margin-bottom:28px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.6px;text-transform:uppercase}
+.field input,.field select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s;width:100%;justify-content:center}
+.btn:hover{opacity:.86}
+.btn.sec{background:var(--card);border:1px solid var(--border);color:var(--text);width:auto}
+.btn.ok{background:var(--success);color:#051a10}
+.btn.sm{padding:6px 12px;font-size:11px;width:auto}
+
+/* APP */
+#app-shell{display:none;flex-direction:column;height:100vh;overflow:hidden}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:9px;padding:0 13px;height:48px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:20}
+.logo{font-size:14px;font-weight:600;margin-right:4px;white-space:nowrap}
+.logo span{color:var(--accent)}
+.psel{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:4px 9px;color:var(--text);font-family:var(--font);font-size:12px;cursor:pointer;flex:1;max-width:340px}
+.ttabs{display:flex;gap:2px;background:var(--card);border-radius:8px;padding:3px;flex-shrink:0}
+.ttab{padding:4px 13px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:500;color:var(--muted);transition:.13s;white-space:nowrap}
+.ttab.active{background:var(--accent);color:#fff}
+.upill{margin-left:auto;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0}
+.udot{width:6px;height:6px;background:var(--success);border-radius:50%}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sb-hdr{padding:9px 13px;border-bottom:1px solid var(--border);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+#pl-scroll{overflow-y:auto;flex:1}
+.dom-lbl{padding:7px 13px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.pi{padding:5px 13px;cursor:pointer;border-left:3px solid transparent;transition:.12s;display:flex;justify-content:space-between;align-items:flex-start;gap:5px}
+.pi:hover{background:var(--card)}
+.pi.active{background:var(--card);border-left-color:var(--accent)}
+.pid{font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:600;flex-shrink:0}
+.pt{font-size:9px;color:var(--text);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:2px}
+.dd{background:var(--success)}.dp{background:var(--warn)}.dn{background:var(--border)}
+
+/* VIEWER */
+.vpane{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.vtbar{display:flex;align-items:center;gap:5px;padding:4px 9px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.vb{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;font-family:var(--font);transition:.12s}
+.vb:hover{border-color:var(--accent);color:var(--accent)}
+.pginfo{font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 3px}
+.hlpal{display:flex;align-items:center;gap:4px;margin-left:auto}
+.hlpal-lbl{font-size:10px;color:var(--muted)}
+.swch{width:16px;height:16px;border-radius:3px;border:2px solid transparent;cursor:pointer;transition:.12s;flex-shrink:0}
+.swch.on{border-color:#fff;transform:scale(1.2)}
+.hlbtn{font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:var(--font);transition:.12s}
+.hlbtn.on{background:rgba(255,235,59,.12);border-color:#FFEB3B;color:#FFEB3B}
+
+#pscroll{flex:1;overflow:auto;background:#1b1f30;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:8px}
+.no-pdf{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:8px;color:var(--muted);text-align:center}
+.no-pdf .ico{font-size:36px;opacity:.28}
+.no-pdf p{font-size:11px;line-height:1.7;max-width:260px}
+.no-pdf code{background:var(--card);padding:1px 4px;border-radius:3px;font-family:var(--mono);font-size:10px}
+
+/* PAGE WRAP — canvas + text layer stacked */
+.pw{position:relative;flex-shrink:0;box-shadow:0 3px 20px rgba(0,0,0,.5)}
+.pw canvas{display:block}
+/* PDF.js text layer — renders invisible selectable spans */
+.pw .textLayer{
+  position:absolute;inset:0;overflow:hidden;line-height:1;
+  opacity:1;pointer-events:auto;
+}
+.pw .textLayer span{
+  color:transparent;position:absolute;white-space:pre;cursor:text;
+  transform-origin:0% 0%;
+  /* Show native selection highlight */
+}
+.pw .textLayer ::selection{background:rgba(255,235,59,.5);}
+/* Saved highlight rects drawn as absolute divs */
+.hlrect{position:absolute;border-radius:1px;pointer-events:none;opacity:.4}
+
+/* PANEL */
+.apanel{width:320px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.ph{padding:9px 13px 7px;border-bottom:1px solid var(--border)}
+.ph-title{font-size:11px;font-weight:600}
+.ph-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.4}
+.pscrl{flex:1;overflow-y:auto;padding:9px 11px}
+
+.slbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin:9px 0 5px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
+.db{padding:8px 3px;border-radius:8px;border:2px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-size:10px;font-weight:500;text-align:center;transition:.14s;font-family:var(--font)}
+.db:hover{border-color:var(--accent);color:var(--text)}
+.db.si{border-color:var(--success);background:#0d2a1c;color:var(--success)}
+.db.se{border-color:var(--danger);background:#2a0f0e;color:var(--danger)}
+.db.su{border-color:var(--warn);background:#2a1c00;color:var(--warn)}
+.crow{display:flex;gap:3px;margin-bottom:9px}
+.cb{flex:1;padding:4px 1px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-size:10px;text-align:center;transition:.13s;font-family:var(--font)}
+.cb:hover{border-color:var(--accent)}
+.cb.on{border-color:var(--accent);background:rgba(91,141,238,.13);color:var(--accent)}
+.fg{margin-bottom:9px}
+.fg label{display:block;font-size:9px;font-weight:600;color:var(--muted);margin-bottom:3px}
+.fg textarea,.fg input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);font-family:var(--font);font-size:11px;resize:vertical;outline:none;transition:border .14s}
+.fg textarea{min-height:48px}
+.fg textarea:focus,.fg input:focus{border-color:var(--accent)}
+.mcard{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:9px}
+.mrow{display:flex;gap:4px;margin-bottom:2px;font-size:9px}
+.mk{color:var(--muted);width:66px;flex-shrink:0;font-weight:500}
+.mv{color:var(--text);flex:1;word-break:break-word}
+.mdoi{color:var(--accent);text-decoration:none;font-size:9px;font-family:var(--mono)}
+.mdoi:hover{text-decoration:underline}
+.hle{background:var(--card);border-radius:6px;padding:5px 7px;margin-bottom:3px;border-left:3px solid #FFEB3B;display:flex;align-items:flex-start;gap:4px}
+.hlt{font-size:9px;line-height:1.4;flex:1;word-break:break-word;color:var(--text)}
+.hlp{font-size:8px;color:var(--muted);margin-top:1px}
+.hldel{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1;flex-shrink:0}
+.hldel:hover{color:var(--danger)}
+
+/* PICO */
+.pc{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden}
+.pch{display:flex;align-items:center;gap:6px;padding:6px 9px;cursor:pointer;user-select:none}
+.pbadge{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0}
+.pname{font-size:10px;font-weight:600;flex:1}
+.pchev{color:var(--muted);font-size:9px;transition:.18s}
+.pc.open .pchev{transform:rotate(90deg)}
+.pcb{display:none;padding:0 9px 8px}
+.pc.open .pcb{display:block}
+.phint{font-size:9px;color:var(--muted);margin-bottom:6px;line-height:1.4}
+.pta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 7px;color:var(--text);font-family:var(--font);font-size:10px;resize:vertical;outline:none;min-height:44px;transition:border .14s}
+.pta:focus{border-color:var(--accent)}
+.psrc{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 7px;color:var(--text);font-family:var(--font);font-size:9px;outline:none;margin-top:3px;transition:border .14s}
+.psrc:focus{border-color:var(--accent)}
+.pastebtn{display:inline-flex;align-items:center;gap:2px;font-size:9px;color:var(--accent);cursor:pointer;margin-top:4px;background:none;border:none;font-family:var(--font);padding:0}
+.pastebtn:hover{text-decoration:underline}
+
+.savebar{padding:8px 9px;border-top:1px solid var(--border);display:flex;gap:4px}
+.savebar .btn{font-size:10px;padding:6px 11px}
+.saveok{font-size:9px;color:var(--success);text-align:center;padding:1px 0 3px;display:none}
+
+.toast{position:fixed;bottom:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 13px;font-size:11px;z-index:9999;opacity:0;transform:translateY(5px);transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-color:var(--success);color:var(--success)}
+.toast.err{border-color:var(--danger);color:var(--danger)}
+#pscroll.hlactive{cursor:crosshair}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+<div class="lbox">
+  <h1>🔬 SYNERGY Annotator</h1>
+  <p class="sub">Human vs LLM PICO &amp; Screening Experiment</p>
+  <div class="field"><label>Full Name</label><input id="ln" type="text" placeholder="Jane Smith" autocomplete="name"></div>
+  <div class="field"><label>Email</label><input id="le" type="email" placeholder="jane@university.edu" autocomplete="email"></div>
+  <div class="field"><label>Role</label>
+    <select id="lr"><option value="student">Student Annotator</option><option value="expert">Expert / Gold Standard</option></select>
+  </div>
+  <button class="btn" onclick="doLogin()">Start Annotating →</button>
+  <div id="lerr" style="color:var(--danger);font-size:11px;margin-top:6px;display:none"></div>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app-shell">
+  <div class="topbar">
+    <div class="logo"></div>
+    <select class="psel" id="psel"><option value="">— Select a paper —</option></select>
+    <div class="upill"><div class="udot"></div><span id="uname">—</span></div>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-hdr">Papers</div>
+      <div id="pl-scroll"></div>
+    </div>
+
+    <!-- PDF viewer -->
+    <div class="vpane">
+      <div class="vtbar">
+        <button class="vb" onclick="prevPage()">◀ Prev</button>
+        <button class="vb" onclick="nextPage()">Next ▶</button>
+        <span class="pginfo" id="pginfo">— / —</span>
+        <button class="vb" onclick="rezoom(-0.25)">−</button>
+        <button class="vb" onclick="rezoom(0.25)">+</button>
+        <span class="pginfo" id="zinfo">100%</span>
+        <div class="hlpal" id="hlpal" style="display:none">
+          <span style="font-size:10px;color:var(--muted);margin-right:4px">Select text to highlight</span>
+          <div class="swch on"  style="background:#FFEB3B" onclick="setSwatch('#FFEB3B',this)" title="Yellow (general)"></div>
+          <div class="swch" style="background:#80CBC4" onclick="setSwatch('#80CBC4',this)" title="Teal — Population"></div>
+          <div class="swch" style="background:#90CAF9" onclick="setSwatch('#90CAF9',this)" title="Blue — Intervention"></div>
+          <div class="swch" style="background:#FFCC80" onclick="setSwatch('#FFCC80',this)" title="Orange — Comparator"></div>
+          <div class="swch" style="background:#F48FB1" onclick="setSwatch('#F48FB1',this)" title="Pink — Outcome"></div>
+        </div>
+      </div>
+      <div id="pscroll">
+        <div class="no-pdf" id="nopdf">
+          <div class="ico">📄</div>
+          <p>Select a paper to begin.<br>PDFs go in <code>papers/</code><br>named <code>PSY-04.pdf</code> etc.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotation panel -->
+    <div class="apanel">
+      <div class="ttabs" style="margin:8px 11px 4px;padding:2px;background:var(--card);border-radius:6px;border:1px solid var(--border)">
+        <div class="ttab active" id="t-scr" onclick="switchTask('screening')" style="padding:5px 12px;font-size:11px">Screening</div>
+        <div class="ttab" id="t-ext" onclick="switchTask('extraction')" style="padding:5px 12px;font-size:11px">PICO</div>
+      </div>
+      <div class="ph" style="padding:8px 11px;border-bottom:1px solid var(--border)">
+        <div class="ph-title" id="ph-title">Select a paper</div>
+        <div class="ph-sub" id="ph-sub">—</div>
+      </div>
+
+      <!-- Screening -->
+      <div id="pnl-scr" class="pscrl">
+        <div id="mcard" class="mcard" style="display:none"></div>
+        <div class="slbl">Decision</div>
+        <div class="dgrid">
+          <button class="db" id="btn-include"   onclick="setDecision('include')">✓ Include</button>
+          <button class="db" id="btn-exclude"   onclick="setDecision('exclude')">✕ Exclude</button>
+          <button class="db" id="btn-uncertain" onclick="setDecision('uncertain')">? Uncertain</button>
+        </div>
+        <div class="slbl">Confidence (1 = guessing, 5 = certain)</div>
+        <div class="crow">
+          <button class="cb" onclick="setConf(1)">1</button>
+          <button class="cb" onclick="setConf(2)">2</button>
+          <button class="cb" onclick="setConf(3)">3</button>
+          <button class="cb" onclick="setConf(4)">4</button>
+          <button class="cb" onclick="setConf(5)">5</button>
+        </div>
+        <div class="fg"><label>Primary Reason</label><textarea id="reason" placeholder="e.g. Wrong population — pediatric only"></textarea></div>
+        <div class="fg"><label>Notes / Queries</label><textarea id="notes" placeholder="Anything to flag…"></textarea></div>
+      </div>
+
+      <!-- Extraction -->
+      <div id="pnl-ext" class="pscrl" style="display:none">
+        <div id="picocards"></div>
+      </div>
+
+      <div class="savebar">
+        <button class="btn ok sm" onclick="saveNow()">💾 Save</button>
+        <button class="btn sec sm" onclick="completeSess()">✓ Mark Complete</button>
+      </div>
+      <div class="saveok" id="saveok">Saved ✓</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+const API = window.location.origin;
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── State ────────────────────────────────────────────────────────────────────
+const S={
+  annotator:null, paper:null, session:null, task:'screening',
+  decision:null, confidence:null, highlights:[], picoData:{},
+  pdfDoc:null, pages:[], scale:1.5, curPage:1,
+  hlColor:'#FFEB3B', hlMode:true,  // always on
+  timerStart:null, timerInterval:null,   // runs silently — not shown
+};
+
+const PICO=[
+  {k:'P', lbl:'Population',   col:'var(--cP)', hint:'Who are the participants? Species, age, diagnosis, setting, key criteria.'},
+  {k:'I', lbl:'Intervention', col:'var(--cI)', hint:'What was done? Type, dose, duration, delivery mode.'},
+  {k:'C', lbl:'Comparator',   col:'var(--cC)', hint:'What was the comparison? Placebo, active control, alternative technique.'},
+  {k:'O', lbl:'Outcome',      col:'var(--cO)', hint:'What was measured? Primary endpoint, instrument, time-point, units.'},
+  {k:'SD',lbl:'Study Design', col:'var(--cSD)',hint:'RCT, cohort, systematic review, animal experiment, etc.'},
+  {k:'SS',lbl:'Sample Size',  col:'var(--cSS)',hint:'Total N, n per group, power calculation if reported.'},
+  {k:'M', lbl:'Key Metrics',  col:'var(--cM)', hint:'Effect sizes, p-values, AUC, sensitivity/specificity, OR, HR, etc.'},
+];
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+const g=x=>document.getElementById(x);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function toast(msg,type='ok'){const t=g('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),2200);}
+async function api(method,path,body){
+  try{
+    const r=await fetch(API+path,{method,headers:{'Content-Type':'application/json'},
+      body:body?JSON.stringify(body):undefined});
+    return await r.json();
+  }catch(e){return{error:e.message};}
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const name=g('ln').value.trim(),email=g('le').value.trim(),role=g('lr').value;
+  const err=g('lerr');
+  if(!name||!email){err.textContent='Name and email required.';err.style.display='block';return;}
+  if(!email.includes('@')){err.textContent='Enter a valid email.';err.style.display='block';return;}
+  err.style.display='none';
+  const res=await api('POST','/api/annotators',{name,email,role});
+  if(res.error){err.textContent=res.error;err.style.display='block';return;}
+  S.annotator=res;
+  g('uname').textContent=name.split(' ')[0];
+  g('login-screen').style.display='none';
+  g('app-shell').style.display='flex';
+  await buildPaperList();
+  // Attach dropdown handler after login
+  console.log('Attaching psel change handler');
+  g('psel').addEventListener('change',e=>{
+    console.log('psel changed to:', e.target.value);
+    loadPaper(e.target.value);
+  });
+}
+g('le').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// Ctrl+Z — undo last highlight
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){
+    if(!S.highlights.length)return;
+    e.preventDefault();
+    deleteHl(S.highlights[S.highlights.length-1].id);
+    toast('Highlight removed ✓','ok');
+  }
+});
+
+// ── Paper list ────────────────────────────────────────────────────────────────
+async function buildPaperList(){
+  const[papers,progress]=await Promise.all([
+    api('GET','/api/papers'),
+    api('GET',`/api/annotators/${S.annotator.id}/progress`)
+  ]);
+  const done={};progress.forEach(s=>{done[`${s.paper_id}:${s.task}`]=s.status;});
+  const sel=g('psel'),scroll=g('pl-scroll');
+  sel.innerHTML='<option value="">— Select a paper —</option>';
+  scroll.innerHTML='';
+  const byD={};papers.forEach(p=>{(byD[p.domain]=byD[p.domain]||[]).push(p);});
+  Object.entries(byD).forEach(([dom,list])=>{
+    const og=document.createElement('optgroup');og.label=dom;
+    list.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=`${p.id} — ${p.authors} (${p.year})`;og.appendChild(o);});
+    sel.appendChild(og);
+    const sec=document.createElement('div');
+    sec.innerHTML=`<div class="dom-lbl">${dom}</div>`;
+    list.forEach(p=>{
+      const sc=done[`${p.id}:screening`]||'none',ex=done[`${p.id}:extraction`]||'none';
+      const dc=ex==='completed'?'dd':sc==='completed'?'dp':'dn';
+      const el=document.createElement('div');el.className='pi';el.dataset.id=p.id;
+      el.innerHTML=`<div><div class="pid">${p.id}</div><div class="pt">${esc(p.authors)} (${p.year})</div></div><div class="sdot ${dc}"></div>`;
+      el.onclick=()=>{loadPaper(p.id);g('psel').value=p.id;};
+      sec.appendChild(el);
+    });
+    scroll.appendChild(sec);
+  });
+}
+
+// ── Load paper ────────────────────────────────────────────────────────────────
+async function loadPaper(paperId){
+  console.log('loadPaper called with:', paperId);
+  if(!paperId)return;
+  if(S.session)await autoSave();
+  const paper=await api('GET',`/api/papers/${paperId}`);
+  console.log('Paper loaded:', paper);
+  S.paper=paper;S.decision=null;S.confidence=null;S.highlights=[];S.picoData={};
+
+  document.querySelectorAll('.pi').forEach(el=>el.classList.toggle('active',el.dataset.id===paperId));
+  g('ph-title').textContent=`${paper.id} — ${paper.authors}`;
+  g('ph-sub').textContent=`${paper.journal} (${paper.year}) · ${paper.domain}`;
+
+  const mc=g('mcard');mc.style.display='block';
+  mc.innerHTML=`
+    <div class="mrow"><span class="mk">DOI</span><a href="https://doi.org/${paper.doi}" target="_blank" class="mdoi">${paper.doi}</a></div>
+    ${paper.pmid?`<div class="mrow"><span class="mk">PubMed</span><a href="https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/" target="_blank" class="mdoi">PMID ${paper.pmid}</a></div>`:''}`;
+
+  const sess=await api('POST','/api/sessions',{annotator_id:S.annotator.id,paper_id:paperId,task:S.task});
+  S.session=sess;
+  const ex=await api('GET',`/api/sessions/${sess.id}/data`);
+
+  // Restore screening
+  g('reason').value='';g('notes').value='';
+  ['include','exclude','uncertain'].forEach(d=>g(`btn-${d}`).className='db');
+  document.querySelectorAll('.cb').forEach(b=>b.classList.remove('on'));
+  if(ex.screening?.[0]){
+    const s=ex.screening[0];S.decision=s.decision;S.confidence=s.confidence;
+    g('reason').value=s.reason||'';g('notes').value=s.notes||'';
+    if(s.decision)setDecision(s.decision,true);
+    if(s.confidence)setConf(s.confidence,true);
+  }
+  // Restore extractions
+  if(ex.extractions)ex.extractions.forEach(e=>{S.picoData[e.element]={text:e.extracted_text,source:e.source_location};});
+  S.highlights=ex.highlights||[];
+  buildPicoCds();renderHlList();startTimer();
+
+  if(paper.has_pdf){
+    g('hlpal').style.display='flex';
+    loadPDF(`/api/papers/${paperId}/pdf`);
+  }else{
+    g('hlpal').style.display='none';
+    g('pscroll').innerHTML=`<div class="no-pdf"><div class="ico">📄</div>
+      <p>No PDF for <strong>${paperId}</strong>.<br>Drop <code>${paperId}.pdf</code> in <code>papers/</code>.<br>
+      <a href="https://doi.org/${paper.doi}" target="_blank" style="color:var(--accent)">Open via DOI →</a></p></div>`;
+    S.pdfDoc=null;S.pages=[];
+  }
+}
+
+// ── Task switch ───────────────────────────────────────────────────────────────
+async function switchTask(task){
+  if(task===S.task)return;
+  if(S.session)await autoSave();
+  S.task=task;
+  g('t-scr').classList.toggle('active',task==='screening');
+  g('t-ext').classList.toggle('active',task==='extraction');
+  g('pnl-scr').style.display=task==='screening'?'block':'none';
+  g('pnl-ext').style.display=task==='extraction'?'block':'none';
+  if(!S.paper)return;
+  const sess=await api('POST','/api/sessions',{annotator_id:S.annotator.id,paper_id:S.paper.id,task});
+  S.session=sess;
+  const ex=await api('GET',`/api/sessions/${sess.id}/data`);
+  if(task==='extraction'&&ex.extractions){ex.extractions.forEach(e=>{S.picoData[e.element]={text:e.extracted_text,source:e.source_location};});buildPicoCds();}
+  S.highlights=ex.highlights||[];
+  renderHlList();startTimer();
+}
+
+// ── Timer: silent background ──────────────────────────────────────────────────
+function startTimer(){clearInterval(S.timerInterval);S.timerStart=Date.now();}
+
+// ── PDF loading ───────────────────────────────────────────────────────────────
+async function loadPDF(url){
+  console.log('loadPDF called with URL:', url);
+  const sc=g('pscroll');
+  sc.innerHTML='<div class="no-pdf"><div class="ico">⏳</div><p>Loading PDF…</p></div>';
+  try{
+    console.log('Starting PDF.js getDocument...');
+    S.pdfDoc=await pdfjsLib.getDocument(url).promise;
+    console.log('PDF loaded, numPages:', S.pdfDoc.numPages);
+    S.pages=[];S.curPage=1;sc.innerHTML='';
+    console.log('Creating page wrappers...');
+    for(let i=1;i<=S.pdfDoc.numPages;i++){
+      const w=document.createElement('div');
+      w.className='pw';w.dataset.page=i;
+      // Placeholder size before render
+      w.style.cssText='width:816px;height:1056px;background:#fff';
+      sc.appendChild(w);S.pages.push(w);
+    }
+    updPgInfo();
+    console.log('Rendering first pages...');
+    // Render first 2 pages immediately
+    await renderPg(1);
+    if(S.pdfDoc.numPages>=2)await renderPg(2);
+    sc.addEventListener('scroll',onScroll,{passive:true});
+    // If highlight mode was on, re-arm
+    if(S.hlMode)sc.classList.add('hlactive');
+  }catch(e){
+    console.error('PDF loading error:', e);
+    sc.innerHTML=`<div class="no-pdf"><div class="ico">⚠</div><p>Could not load PDF.<br><small>${esc(e.message)}</small></p></div>`;
+  }
+}
+
+// ── Render a page: canvas + PDF.js text layer (makes text selectable) ─────────
+async function renderPg(n){
+  const wrap=S.pages[n-1];
+  if(!wrap||wrap.dataset.rend==='1')return;
+  wrap.dataset.rend='1';
+  const page=await S.pdfDoc.getPage(n);
+  const vp=page.getViewport({scale:S.scale});
+  wrap.style.width=vp.width+'px';
+  wrap.style.height=vp.height+'px';
+
+  // Canvas layer
+  const cv=document.createElement('canvas');
+  cv.width=vp.width;cv.height=vp.height;
+  cv.style.cssText='display:block;position:absolute;top:0;left:0';
+  wrap.style.position='relative';
+  wrap.appendChild(cv);
+  await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+
+  // Text layer — invisible spans, pointer-events on, browser selection works
+  const tl=document.createElement('div');
+  tl.className='textLayer';
+  tl.style.cssText=`position:absolute;top:0;left:0;width:${vp.width}px;height:${vp.height}px;overflow:hidden`;
+  wrap.appendChild(tl);
+
+  // Text layer rendering — PDF.js 3.x moved renderTextLayer to pdf_viewer.js;
+  // wrap in try/catch so canvas display still works if text selection fails.
+  try{
+    const tc=await page.getTextContent();
+    const task=typeof pdfjsLib.renderTextLayer==='function'
+      ? pdfjsLib.renderTextLayer({textContentSource:tc,container:tl,viewport:vp,textDivs:[]})
+      : null;
+    if(task?.promise)await task.promise;
+  }catch(e){
+    console.warn('Text layer unavailable:',e.message);
+  }
+
+  // Attach mouseup listener to text layer to capture selections
+  tl.addEventListener('mouseup',()=>{
+    if(!S.hlMode)return;
+    // Small delay so selection is finalised
+    setTimeout(()=>captureSelection(n,wrap,vp),30);
+  });
+
+  // Draw any previously saved highlights for this page
+  redrawPageHls(n,wrap,vp);
+}
+
+function onScroll(){
+  const sc=g('pscroll'),top=sc.scrollTop,h=sc.offsetHeight;
+  S.pages.forEach((w,i)=>{
+    const n=i+1,wt=w.offsetTop,wh=w.offsetHeight;
+    if(wt<top+h+900&&wt+wh>top-400)renderPg(n);
+    if(wt>=top&&wt<top+h/2){S.curPage=n;updPgInfo();}
+  });
+}
+
+function updPgInfo(){
+  const tot=S.pdfDoc?S.pdfDoc.numPages:0;
+  g('pginfo').textContent=`${S.curPage} / ${tot}`;
+  g('zinfo').textContent=Math.round(S.scale/1.5*100)+'%';
+}
+function prevPage(){goPage(Math.max(1,S.curPage-1));}
+function nextPage(){goPage(Math.min(S.pdfDoc?.numPages||1,S.curPage+1));}
+function goPage(n){const w=S.pages[n-1];if(w){w.scrollIntoView({behavior:'smooth'});S.curPage=n;updPgInfo();}}
+
+async function rezoom(d){
+  S.scale=Math.max(0.6,Math.min(3.5,S.scale+d));
+  if(!S.pdfDoc)return;
+  const sc=g('pscroll');
+  sc.removeEventListener('scroll',onScroll);
+  sc.innerHTML='';S.pages=[];
+  for(let i=1;i<=S.pdfDoc.numPages;i++){
+    const w=document.createElement('div');w.className='pw';w.dataset.page=i;
+    w.style.cssText='width:816px;height:1056px;background:#fff';
+    sc.appendChild(w);S.pages.push(w);
+  }
+  await renderPg(1);
+  if(S.pdfDoc.numPages>=2)await renderPg(2);
+  sc.addEventListener('scroll',onScroll,{passive:true});
+  updPgInfo();
+  if(S.hlMode)sc.classList.add('hlactive');
+}
+
+// ── Highlight mode ────────────────────────────────────────────────────────────
+function toggleHlMode(){
+  S.hlMode=!S.hlMode;
+  const btn=g('hlbtn');
+  btn.textContent=`✍ Highlight: ${S.hlMode?'ON':'OFF'}`;
+  btn.classList.toggle('on',S.hlMode);
+  g('pscroll').classList.toggle('hlactive',S.hlMode);
+}
+function setSwatch(color,el){
+  S.hlColor=color;
+  document.querySelectorAll('.swch').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// ── Capture text selection from a page's text layer ───────────────────────────
+async function captureSelection(pageNum,wrap,vp){
+  if(!S.hlMode||!S.session)return;
+  const sel=window.getSelection();
+  if(!sel||sel.isCollapsed)return;
+  const text=sel.toString().trim();
+  if(text.length<2){sel.removeAllRanges();return;}
+
+  // Collect bounding rects relative to the page wrap (normalised 0–1)
+  const wR=wrap.getBoundingClientRect();
+  const rects=[];
+  for(let i=0;i<sel.rangeCount;i++){
+    const rng=sel.getRangeAt(i);
+    for(const r of rng.getClientRects()){
+      if(r.width<2||r.height<2)continue; // skip degenerate rects
+      rects.push({
+        x:(r.left-wR.left)/wR.width,
+        y:(r.top-wR.top)/wR.height,
+        w:r.width/wR.width,
+        h:r.height/wR.height,
+      });
+    }
+  }
+  sel.removeAllRanges();
+
+  const res=await api('POST','/api/highlights',{
+    session_id:S.session.id,annotator_id:S.annotator.id,paper_id:S.paper.id,
+    selected_text:text,page_num:pageNum,color:S.hlColor,rects,
+  });
+  const entry={id:res.id,selected_text:text,page_num:pageNum,color:S.hlColor,rects_json:JSON.stringify(rects)};
+  S.highlights.push(entry);
+  renderHlList();
+  redrawPageHls(pageNum,wrap,vp);
+  toast('Highlight saved ✓','ok');
+}
+
+// ── Draw saved highlight rects on a rendered page ─────────────────────────────
+function redrawPageHls(pageNum,wrap,vp){
+  wrap.querySelectorAll('.hlrect').forEach(el=>el.remove());
+  S.highlights.filter(h=>h.page_num===pageNum).forEach(h=>{
+    let rects=[];
+    try{rects=JSON.parse(h.rects_json||'[]');}catch{}
+    rects.forEach(r=>{
+      const div=document.createElement('div');
+      div.className='hlrect';
+      div.style.cssText=`left:${r.x*vp.width}px;top:${r.y*vp.height}px;width:${r.w*vp.width}px;height:${r.h*vp.height}px;background:${h.color||'#FFEB3B'}`;
+      wrap.appendChild(div);
+    });
+  });
+}
+
+async function deleteHl(hlId){
+  await api('DELETE',`/api/highlights/${hlId}`);
+  S.highlights=S.highlights.filter(h=>h.id!==hlId);
+  renderHlList();
+  // Redraw highlights on all rendered pages
+  for(let i=0;i<S.pages.length;i++){
+    const w=S.pages[i];
+    if(w.dataset.rend!=='1')continue;
+    const vp=(await S.pdfDoc.getPage(i+1)).getViewport({scale:S.scale});
+    redrawPageHls(i+1,w,vp);
+  }
+}
+
+function renderHlList(){
+  const el=g('hllist');
+  const countEl=g('hlcount');
+  if(!el||!countEl)return;  // Elements removed from UI
+  countEl.textContent=S.highlights.length;
+  if(!S.highlights.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:9px;line-height:1.5">No highlights yet.</div>';
+    return;
+  }
+  el.innerHTML=S.highlights.map(h=>`
+    <div class="hle" style="border-left-color:${h.color||'#FFEB3B'}">
+      <div style="flex:1"><div class="hlt">${esc(h.selected_text.substring(0,130))}${h.selected_text.length>130?'…':''}</div>
+      <div class="hlp">p.${h.page_num||'?'}</div></div>
+      <button class="hldel" onclick="deleteHl(${h.id})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+// ── PICO cards ────────────────────────────────────────────────────────────────
+function buildPicoCds(){
+  g('picocards').innerHTML=PICO.map(el=>{
+    const sv=S.picoData[el.k]||{};
+    return `<div class="pc" id="pc${el.k}">
+      <div class="pch" onclick="toggleP('${el.k}')">
+        <div class="pbadge" style="background:${el.col}18;color:${el.col}">${el.k}</div>
+        <div class="pname">${el.lbl}</div><div class="pchev">▶</div>
+      </div>
+      <div class="pcb">
+        <div class="phint">${el.hint}</div>
+        <textarea class="pta" id="pt${el.k}" placeholder="Extract the ${el.lbl.toLowerCase()}…" oninput="spLocal('${el.k}')">${esc(sv.text||'')}</textarea>
+        <input class="psrc" id="ps${el.k}" placeholder="Source: page / section" value="${esc(sv.source||'')}" oninput="spLocal('${el.k}')">
+        <button class="pastebtn" onclick="pasteHL('${el.k}')">⊕ Paste last highlight</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleP(k){g('pc'+k).classList.toggle('open');}
+function spLocal(k){S.picoData[k]={text:g('pt'+k)?.value||'',source:g('ps'+k)?.value||''};}
+function pasteHL(k){
+  if(!S.highlights.length){toast('No highlights yet — select text in the PDF first','err');return;}
+  const last=S.highlights[S.highlights.length-1];
+  const ta=g('pt'+k);
+  if(ta){ta.value=(ta.value?ta.value+'\n':'')+last.selected_text;spLocal(k);}
+  if(!g('pc'+k).classList.contains('open'))g('pc'+k).classList.add('open');
+  toast(`Pasted into ${k}`,'ok');
+}
+
+// ── Screening ─────────────────────────────────────────────────────────────────
+function setDecision(v,silent){
+  S.decision=v;
+  ['include','exclude','uncertain'].forEach(d=>g('btn-'+d).className='db'+(v===d?` s${d[0]}`:''));
+  // reapply full class names
+  g('btn-include').className='db'+(v==='include'?' si':'');
+  g('btn-exclude').className='db'+(v==='exclude'?' se':'');
+  g('btn-uncertain').className='db'+(v==='uncertain'?' su':'');
+  if(!silent)autoSave();
+}
+function setConf(v,silent){
+  S.confidence=v;
+  document.querySelectorAll('.cb').forEach((b,i)=>b.classList.toggle('on',i+1===v));
+  if(!silent)autoSave();
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function saveNow(){
+  if(!S.session||!S.paper){toast('Select a paper first','err');return;}
+  await persist();
+  const ok=g('saveok');ok.style.display='block';
+  toast('Saved ✓','ok');setTimeout(()=>ok.style.display='none',2000);
+}
+async function autoSave(){if(S.session&&S.paper)await persist();}
+async function persist(){
+  if(S.task==='screening'){
+    if(!S.decision)return;
+    await api('POST','/api/screening',{
+      session_id:S.session.id,annotator_id:S.annotator.id,paper_id:S.paper.id,
+      decision:S.decision,confidence:S.confidence,
+      reason:g('reason').value,notes:g('notes').value,
+    });
+  }else{
+    const els=PICO.map(el=>{spLocal(el.k);const d=S.picoData[el.k]||{};return{element:el.k,extracted_text:d.text||'',source_location:d.source||''};}).filter(e=>e.extracted_text);
+    if(els.length)await api('POST','/api/extraction',{session_id:S.session.id,annotator_id:S.annotator.id,paper_id:S.paper.id,elements:els});
+  }
+}
+async function completeSess(){
+  if(!S.session)return;
+  await persist();
+  await api('POST',`/api/sessions/${S.session.id}/complete`,{});
+  clearInterval(S.timerInterval);
+  toast('Session marked complete ✓','ok');
+  await buildPaperList();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Database — keep out of git; back up separately
+*.db
+*.db-wal
+*.db-shm
+
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Local env
+.env.local
+
+# macOS
+.DS_Store
+
+# Claude Code session memory
+.claude/
+
+# Dev utilities
+download_papers.py
