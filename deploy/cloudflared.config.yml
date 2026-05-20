@@ -1,0 +1,13 @@
+tunnel: 45df3c1b-ba10-45d7-83a7-cd0366226b21
+credentials-file: /etc/cloudflared/45df3c1b-ba10-45d7-83a7-cd0366226b21.json
+
+ingress:
+  - hostname: code.badmath.org
+    service: http://127.0.0.1:4096
+  - hostname: carnac.badmath.org
+    service: http://127.0.0.1:8080
+  - hostname: pi.badmath.org
+    service: http://127.0.0.1:8081
+  - hostname: study.badmath.org
+    service: http://127.0.0.1:5050
+  - service: http_status:404

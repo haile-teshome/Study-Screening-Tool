@@ -1,0 +1,16 @@
+[Unit]
+Description=SYNERGY Study Screening Tool (gunicorn on 127.0.0.1:5050)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/christopher/projects/haile/Study-Screening-Tool
+EnvironmentFile=/home/christopher/projects/haile/Study-Screening-Tool/.env
+ExecStartPre=/home/christopher/projects/haile/Study-Screening-Tool/venv/bin/python -c "import app; app.init_db()"
+ExecStart=/home/christopher/projects/haile/Study-Screening-Tool/venv/bin/gunicorn app:app --bind 127.0.0.1:5050 --workers 2 --timeout 120 --access-logfile - --error-logfile -
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target
