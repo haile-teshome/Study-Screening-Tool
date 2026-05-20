@@ -639,11 +639,13 @@ async function loadPaper(paperId){
   g('reason').value='';g('notes').value='';
   ['include','exclude','uncertain'].forEach(d=>g(`btn-${d}`).className='db');
   document.querySelectorAll('.cb').forEach(b=>b.classList.remove('on'));
+  clearCriteria();
   if(ex.screening?.[0]){
     const s=ex.screening[0];S.decision=s.decision;S.confidence=s.confidence;
     g('reason').value=s.reason||'';g('notes').value=s.notes||'';
     if(s.decision)setDecision(s.decision,true);
     if(s.confidence)setConf(s.confidence,true);
+    restoreCriteria(s);
   }
   // Restore extractions
   if(ex.extractions)ex.extractions.forEach(e=>{S.picoData[e.element]={text:e.extracted_text,source:e.source_location};});
@@ -970,11 +972,38 @@ function getCriteriaData(){
       evidence[critKey] = ta.value;
     }
   });
-  return { 
-    inclusion_criteria: inclusion.join(','), 
+  return {
+    inclusion_criteria: inclusion.join(','),
     exclusion_criteria: exclusion.join(','),
     criteria_evidence: JSON.stringify(evidence)
   };
+}
+
+// Overall verdict is derived from the criteria — no separate decision input.
+// Include only when every inclusion criterion is met and no exclusion criterion fires.
+function deriveDecision(){
+  const n = sel => document.querySelectorAll(sel).length;
+  const incTotal = n('#inclusion-criteria input[type="checkbox"]');
+  const incMet   = n('#inclusion-criteria input[type="checkbox"]:checked');
+  const excMet   = n('#exclusion-criteria input[type="checkbox"]:checked');
+  return (incTotal > 0 && incMet === incTotal && excMet === 0) ? 'include' : 'exclude';
+}
+
+function restoreCriteria(s){
+  const apply = (sectionId, csv) => {
+    (csv || '').split(',').filter(Boolean).forEach(k => {
+      const cb = document.querySelector(`#${sectionId} input[data-crit="${k}"]`);
+      if(cb){ cb.checked = true; toggleCrit(cb); }
+    });
+  };
+  apply('inclusion-criteria', s.inclusion_criteria);
+  apply('exclusion-criteria', s.exclusion_criteria);
+  let ev = {};
+  try{ ev = JSON.parse(s.criteria_evidence || '{}'); }catch(e){ ev = {}; }
+  Object.entries(ev).forEach(([k, v]) => {
+    const ta = g('evidence-' + k);
+    if(ta){ ta.value = v; ta.classList.add('has-content'); S.criteriaEvidence[k] = v; }
+  });
 }
 
 function clearCriteria(){
@@ -1025,11 +1054,10 @@ async function saveNow(){
 async function autoSave(){if(S.session&&S.paper)await persist();}
 async function persist(){
   if(S.task==='screening'||S.task==='criteria'){
-    if(!S.decision)return;
     const criteria = getCriteriaData();
     await api('POST','/api/screening',{
       session_id:S.session.id,annotator_id:S.annotator.id,paper_id:S.paper.id,
-      decision:S.decision,confidence:S.confidence,
+      decision:deriveDecision(),confidence:S.confidence,
       reason:g('reason').value,notes:g('notes').value,
       inclusion_criteria:criteria.inclusion_criteria,exclusion_criteria:criteria.exclusion_criteria,criteria_evidence:criteria.criteria_evidence,
     });
