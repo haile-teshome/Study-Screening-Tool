@@ -154,6 +154,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .crit-item.include.checked input{accent-color:var(--success)}
 .crit-item.exclusion.checked{color:var(--danger)}
 .crit-item.exclusion.checked input{accent-color:var(--danger)}
+.crit-instr{font-size:9px;color:var(--muted);font-style:italic;margin:-2px 0 7px}
+.crit-info{flex-shrink:0;width:13px;height:13px;border-radius:50%;border:1px solid var(--border);color:var(--muted);font-size:8px;font-style:italic;display:inline-flex;align-items:center;justify-content:center;cursor:help;position:relative}
+.crit-info:hover{color:var(--accent);border-color:var(--accent)}
+.crit-info:hover::after{content:attr(data-tip);position:absolute;right:0;top:18px;width:210px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-size:9px;line-height:1.45;font-style:normal;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text);white-space:normal;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:50}
 
 /* PICO */
 .pc{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden}
@@ -259,9 +263,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <!-- Annotation panel -->
     <div class="apanel">
       <div class="ttabs" style="margin:8px 11px 4px;padding:2px;background:var(--card);border-radius:6px;border:1px solid var(--border)">
-        <div class="ttab active" id="t-scr" onclick="switchTask('screening')" style="padding:5px 10px;font-size:11px">Screen</div>
-        <div class="ttab" id="t-crit" onclick="switchTask('criteria')" style="padding:5px 10px;font-size:11px">Criteria</div>
-        <div class="ttab" id="t-ext" onclick="switchTask('extraction')" style="padding:5px 10px;font-size:11px">PICO</div>
+        <div class="ttab" id="t-scr" onclick="switchTask('screening')" style="display:none">Screen</div>
+        <div class="ttab active" id="t-crit" onclick="switchTask('criteria')" style="padding:5px 10px;font-size:11px">Criteria</div>
+        <div class="ttab" id="t-ext" onclick="switchTask('extraction')" style="display:none">PICO</div>
       </div>
       <div class="ph" style="padding:8px 11px;border-bottom:1px solid var(--border)">
         <div class="ph-title" id="ph-title">Select a paper</div>
@@ -269,7 +273,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       </div>
 
       <!-- Screening -->
-      <div id="pnl-scr" class="pscrl">
+      <div id="pnl-scr" class="pscrl" style="display:none">
         <div id="mcard" class="mcard" style="display:none"></div>
         <div class="slbl">Decision</div>
         <div class="dgrid">
@@ -291,10 +295,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       </div>
 
       <!-- Criteria -->
-      <div id="pnl-crit" class="pscrl" style="display:none">
+      <div id="pnl-crit" class="pscrl">
         <!-- Inclusion Criteria -->
         <div class="crit-section" id="inclusion-criteria">
           <div class="crit-title">✓ Inclusion Criteria</div>
+          <div class="crit-instr">Check box if criteria is met.</div>
           <div class="crit-list">
             <label class="crit-item include">
               <input type="checkbox" data-crit="plasma_tau" onchange="toggleCrit(this)">
@@ -338,6 +343,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         <!-- Exclusion Criteria -->
         <div class="crit-section" id="exclusion-criteria">
           <div class="crit-title">✕ Exclusion Criteria</div>
+          <div class="crit-instr">Check box if criteria is met.</div>
           <div class="crit-list">
             <label class="crit-item exclusion">
               <input type="checkbox" data-crit="review_only" onchange="toggleCrit(this)">
@@ -465,7 +471,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 
 // ── State ────────────────────────────────────────────────────────────────────
 const S={
-  annotator:null, paper:null, session:null, task:'screening',
+  annotator:null, paper:null, session:null, task:'criteria',
   decision:null, confidence:null, highlights:[], picoData:{},
   pdfDoc:null, pages:[], scale:1.5, curPage:1,
   hlColor:'#FFEB3B', hlMode:true,  // always on
@@ -512,6 +518,37 @@ document.addEventListener('DOMContentLoaded',()=>{
       panel.classList.remove('collapsed');
     }
   }
+});
+
+// ── Criteria tooltips: extended descriptions on hover ─────────────────────────
+const CRIT_TIPS={
+  plasma_tau:"Primary research (not a review) on plasma phosphorylated tau biomarkers — p-tau181, p-tau217, and/or p-tau231.",
+  diagnostic_accuracy:"Reports diagnostic accuracy metrics (AUC, sensitivity, specificity, or predictive values) against an established reference standard: amyloid PET, tau PET, CSF biomarkers, or neuropathology.",
+  human_adult:"Human adult participants; mean age ≥18. Mixed-age samples acceptable if ≥80% adult.",
+  sample_size:"Total study sample size of at least 30 participants.",
+  peer_reviewed:"Published in a peer-reviewed journal between 2018 and the present.",
+  english:"Full text of the article is available in English.",
+  review_only:"Review article, meta-analysis, editorial, commentary, or letter without original data.",
+  conference_abstract:"Conference abstract not followed by a full peer-reviewed publication.",
+  preprint:"Preprint that has not yet completed peer review.",
+  animal_in_vitro:"Uses only animal models or in vitro experiments — no human participant data.",
+  pediatric:"Study population is exclusively pediatric (mean age <18).",
+  csf_only:"Measures only CSF or imaging tau, without plasma p-tau as a primary biomarker.",
+  case_report:"Case report or case series with fewer than 30 participants.",
+};
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.crit-item input[data-crit]').forEach(cb=>{
+    const tip=CRIT_TIPS[cb.dataset.crit];
+    if(!tip)return;
+    const lbl=cb.closest('.crit-item').querySelector('.crit-label');
+    if(!lbl)return;
+    const info=document.createElement('span');
+    info.className='crit-info';
+    info.textContent='i';
+    info.dataset.tip=tip;
+    info.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
+    lbl.insertAdjacentElement('afterend',info);
+  });
 });
 
 // ── Login ─────────────────────────────────────────────────────────────────────
