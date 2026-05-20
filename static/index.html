@@ -212,7 +212,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 <div id="login-screen">
 <div class="lbox">
   <h1>🔬 Annotation Tool</h1>
-  <div class="field"><label>Full Name</label><input id="ln" type="text" placeholder="Jane Smith" autocomplete="name"></div>
   <div class="field"><label>Email</label><input id="le" type="email" placeholder="jane@university.edu" autocomplete="email"></div>
   <button class="btn" onclick="doLogin()">Start Annotating →</button>
   <div id="lerr" style="color:var(--danger);font-size:11px;margin-top:6px;display:none"></div>
@@ -553,15 +552,15 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function doLogin(){
-  const name=g('ln').value.trim(),email=g('le').value.trim();
+  const email=g('le').value.trim();
   const err=g('lerr');
-  if(!name||!email){err.textContent='Name and email required.';err.style.display='block';return;}
+  if(!email){err.textContent='Email required.';err.style.display='block';return;}
   if(!email.includes('@')){err.textContent='Enter a valid email.';err.style.display='block';return;}
   err.style.display='none';
-  const res=await api('POST','/api/annotators',{name,email});
+  const res=await api('POST','/api/annotators',{email});
   if(res.error){err.textContent=res.error;err.style.display='block';return;}
   S.annotator=res;
-  g('uname').textContent=name.split(' ')[0];
+  g('uname').textContent=res.name;
   g('login-screen').style.display='none';
   g('app-shell').style.display='flex';
   await buildPaperList();

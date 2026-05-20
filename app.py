@@ -395,18 +395,21 @@ def admin_auth():
 @require_access
 def create_annotator():
     data = request.json
-    if not data.get("name") or not data.get("email"):
-        return jsonify({"error": "name and email required"}), 400
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    # Name is no longer collected at login; derive a label from the email.
+    name = (data.get("name") or "").strip() or email.split("@")[0]
     with get_db() as db:
         try:
             cur = db.execute(
                 "INSERT OR IGNORE INTO annotators (name, email, role) VALUES (?,?,?)",
-                (data["name"].strip(), data["email"].strip().lower(), data.get("role","student"))
+                (name, email, data.get("role","student"))
             )
             aid = cur.lastrowid
             if aid == 0:
                 row = db.execute("SELECT id FROM annotators WHERE email=?",
-                                 (data["email"].strip().lower(),)).fetchone()
+                                 (email,)).fetchone()
                 aid = row["id"]
             row = db.execute("SELECT * FROM annotators WHERE id=?", (aid,)).fetchone()
             return jsonify(dict(row))
