@@ -617,6 +617,7 @@ async function buildPaperList(){
 async function loadPaper(paperId){
   console.log('loadPaper called with:', paperId);
   if(!paperId)return;
+  clearTimeout(_autoSaveTimer);
   if(S.session)await autoSave();
   const paper=await api('GET',`/api/papers/${paperId}`);
   console.log('Paper loaded:', paper);
@@ -926,7 +927,14 @@ function pasteHL(k){
 S.criteriaData = { inclusion: {}, exclusion: {} };
 S.criteriaEvidence = {};
 
-function toggleCrit(checkbox){
+// Debounced save: coalesces rapid checkbox / typing changes into one POST.
+let _autoSaveTimer = null;
+function scheduleAutoSave(){
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(() => autoSave(), 600);
+}
+
+function toggleCrit(checkbox, skipSave){
   const crit = checkbox.dataset.crit;
   const type = checkbox.closest('.crit-section').id === 'inclusion-criteria' ? 'inclusion' : 'exclusion';
   S.criteriaData[type][crit] = checkbox.checked;
@@ -936,12 +944,14 @@ function toggleCrit(checkbox){
   if(ta){
     ta.classList.toggle('has-content', checkbox.checked);
   }
+  if(!skipSave) scheduleAutoSave();
 }
 
 function saveCritEvidence(critKey){
   const ta = g('evidence-' + critKey);
   if(ta){
     S.criteriaEvidence[critKey] = ta.value;
+    scheduleAutoSave();
   }
 }
 
@@ -993,7 +1003,7 @@ function restoreCriteria(s){
   const apply = (sectionId, csv) => {
     (csv || '').split(',').filter(Boolean).forEach(k => {
       const cb = document.querySelector(`#${sectionId} input[data-crit="${k}"]`);
-      if(cb){ cb.checked = true; toggleCrit(cb); }
+      if(cb){ cb.checked = true; toggleCrit(cb, true); }
     });
   };
   apply('inclusion-criteria', s.inclusion_criteria);
