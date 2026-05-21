@@ -61,6 +61,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .pi{padding:5px 13px;cursor:pointer;border-left:3px solid transparent;transition:.12s;display:flex;justify-content:space-between;align-items:flex-start;gap:5px}
 .pi:hover{background:var(--card)}
 .pi.active{background:var(--card);border-left-color:var(--accent)}
+.pi.complete{border-left-color:var(--success)}
 .pid{font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:600;flex-shrink:0}
 .pt{font-size:9px;color:var(--text);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:2px}
@@ -144,12 +145,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .crit-item{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:10px;line-height:1.4;padding:4px 0}
 .crit-item input[type="checkbox"]{margin:0;accent-color:var(--accent);flex-shrink:0}
 .crit-label{flex:1}
-.crit-paste{background:none;border:none;color:var(--accent);font-size:9px;cursor:pointer;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity .2s}
-.crit-item:hover .crit-paste{opacity:1}
-.crit-paste:hover{background:rgba(91,141,238,.15)}
-.crit-ta{width:100%;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-family:var(--font);font-size:9px;resize:vertical;outline:none;min-height:32px;margin:0 0 6px 0;transition:border .14s;display:none}
-.crit-ta:focus{border-color:var(--accent)}
-.crit-ta.has-content{display:block}
+.crit-paste{display:none}
+.crit-ta{display:none}
 .crit-item.include.checked{color:var(--success)}
 .crit-item.include.checked input{accent-color:var(--success)}
 .crit-item.exclusion.checked{color:var(--danger)}
@@ -314,7 +311,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             <textarea class="crit-ta" id="evidence-diagnostic_accuracy" placeholder="Extract evidence from paper..." oninput="saveCritEvidence('diagnostic_accuracy')"></textarea>
             <label class="crit-item include">
               <input type="checkbox" data-crit="human_adult" onchange="toggleCrit(this)">
-              <span class="crit-label">Human adult participants (mean age ≥18)</span>
+              <span class="crit-label">Human adult participants (age &gt; 18)</span>
               <button class="crit-paste" onclick="pasteCritHL('human_adult', event)">⊕ Paste</button>
             </label>
             <textarea class="crit-ta" id="evidence-human_adult" placeholder="Extract evidence from paper..." oninput="saveCritEvidence('human_adult')"></textarea>
@@ -369,12 +366,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             </label>
             <textarea class="crit-ta" id="evidence-animal_in_vitro" placeholder="Extract evidence from paper..." oninput="saveCritEvidence('animal_in_vitro')"></textarea>
             <label class="crit-item exclusion">
-              <input type="checkbox" data-crit="pediatric" onchange="toggleCrit(this)">
-              <span class="crit-label">Exclusively pediatric (mean age &lt;18)</span>
-              <button class="crit-paste" onclick="pasteCritHL('pediatric', event)">⊕ Paste</button>
-            </label>
-            <textarea class="crit-ta" id="evidence-pediatric" placeholder="Extract evidence from paper..." oninput="saveCritEvidence('pediatric')"></textarea>
-            <label class="crit-item exclusion">
               <input type="checkbox" data-crit="csf_only" onchange="toggleCrit(this)">
               <span class="crit-label">CSF or imaging tau without plasma p-tau</span>
               <button class="crit-paste" onclick="pasteCritHL('csf_only', event)">⊕ Paste</button>
@@ -415,7 +406,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
           <ul>
             <li>Primary research on plasma phosphorylated tau biomarkers (p-tau181, p-tau217, and/or p-tau231)</li>
             <li>Reports diagnostic accuracy metrics (AUC, sensitivity, specificity, or predictive values) against an established reference standard (amyloid PET, tau PET, CSF biomarkers, or neuropathology)</li>
-            <li>Human adult participants (mean age ≥18; mixed samples acceptable if ≥80% adult)</li>
+            <li>Human adult participants (age &gt; 18)</li>
             <li>Sample size n ≥ 30</li>
             <li>Published in peer-reviewed journal between 2018–present</li>
             <li>Full text available in English</li>
@@ -426,7 +417,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             <li>Conference abstracts without subsequent full publication</li>
             <li>Preprints not yet peer-reviewed</li>
             <li>Animal or in vitro studies only</li>
-            <li>Studies in exclusively pediatric populations (mean age &lt;18)</li>
             <li>Studies measuring only CSF or imaging tau without plasma p-tau as primary biomarker</li>
             <li>Case reports or case series (n&lt;30)</li>
           </ul>
@@ -523,7 +513,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 const CRIT_TIPS={
   plasma_tau:"Primary research (not a review) on plasma phosphorylated tau biomarkers — p-tau181, p-tau217, and/or p-tau231.",
   diagnostic_accuracy:"Reports diagnostic accuracy metrics (AUC, sensitivity, specificity, or predictive values) against an established reference standard: amyloid PET, tau PET, CSF biomarkers, or neuropathology.",
-  human_adult:"Human adult participants; mean age ≥18. Mixed-age samples acceptable if ≥80% adult.",
+  human_adult:"Study participants are adults — age > 18.",
   sample_size:"Total study sample size of at least 30 participants.",
   peer_reviewed:"Published in a peer-reviewed journal between 2018 and the present.",
   english:"Full text of the article is available in English.",
@@ -531,7 +521,6 @@ const CRIT_TIPS={
   conference_abstract:"Conference abstract not followed by a full peer-reviewed publication.",
   preprint:"Preprint that has not yet completed peer review.",
   animal_in_vitro:"Uses only animal models or in vitro experiments — no human participant data.",
-  pediatric:"Study population is exclusively pediatric (mean age <18).",
   csf_only:"Measures only CSF or imaging tau, without plasma p-tau as a primary biomarker.",
   case_report:"Case report or case series with fewer than 30 participants.",
 };
@@ -601,9 +590,10 @@ async function buildPaperList(){
     const sec=document.createElement('div');
     sec.innerHTML=`<div class="dom-lbl">${dom}</div>`;
     list.forEach(p=>{
-      const sc=done[`${p.id}:screening`]||'none',ex=done[`${p.id}:extraction`]||'none';
-      const dc=ex==='completed'?'dd':sc==='completed'?'dp':'dn';
-      const el=document.createElement('div');el.className='pi';el.dataset.id=p.id;
+      const sc=done[`${p.id}:screening`]||'none';
+      const isDone=sc==='completed';
+      const dc=isDone?'dd':'dn';
+      const el=document.createElement('div');el.className='pi'+(isDone?' complete':'');el.dataset.id=p.id;
       el.innerHTML=`<div><div class="pid">${p.id}</div><div class="pt">${esc(p.authors)} (${p.year})</div></div><div class="sdot ${dc}"></div>`;
       el.onclick=()=>{loadPaper(p.id);g('psel').value=p.id;};
       sec.appendChild(el);
@@ -1075,13 +1065,27 @@ async function persist(){
     if(els.length)await api('POST','/api/extraction',{session_id:S.session.id,annotator_id:S.annotator.id,paper_id:S.paper.id,elements:els});
   }
 }
+// First paper after the current one whose screening is not yet complete (wraps around).
+function nextIncompletePaperId(){
+  const items=[...document.querySelectorAll('#pl-scroll .pi')];
+  if(!items.length)return null;
+  const cur=items.findIndex(el=>el.dataset.id===(S.paper&&S.paper.id));
+  for(let i=1;i<=items.length;i++){
+    const el=items[((cur<0?-1:cur)+i)%items.length];
+    if(!el.classList.contains('complete'))return el.dataset.id;
+  }
+  return null;
+}
 async function completeSess(){
   if(!S.session)return;
   await persist();
   await api('POST',`/api/sessions/${S.session.id}/complete`,{});
   clearInterval(S.timerInterval);
-  toast('Session marked complete ✓','ok');
+  toast('Marked complete ✓','ok');
   await buildPaperList();
+  const next=nextIncompletePaperId();
+  if(next){ loadPaper(next); g('psel').value=next; }
+  else toast('All studies complete 🎉','ok');
 }
 
 // ── COGNITIVE METRICS TRACKING ───────────────────────────────────────────────
