@@ -323,7 +323,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             <textarea class="crit-ta" id="evidence-sample_size" placeholder="Extract evidence from paper..." oninput="saveCritEvidence('sample_size')"></textarea>
             <label class="crit-item include">
               <input type="checkbox" data-crit="peer_reviewed" onchange="toggleCrit(this)">
-              <span class="crit-label">Peer-reviewed journal, 2018–present</span>
+              <span class="crit-label">Peer-reviewed journal</span>
               <button class="crit-paste" onclick="pasteCritHL('peer_reviewed', event)">⊕ Paste</button>
             </label>
             <textarea class="crit-ta" id="evidence-peer_reviewed" placeholder="Extract evidence from paper..." oninput="saveCritEvidence('peer_reviewed')"></textarea>
@@ -408,7 +408,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             <li>Reports diagnostic accuracy metrics (AUC, sensitivity, specificity, or predictive values) against an established reference standard (amyloid PET, tau PET, CSF biomarkers, or neuropathology)</li>
             <li>Human adult participants (age &gt; 18)</li>
             <li>Sample size n ≥ 30</li>
-            <li>Published in peer-reviewed journal between 2018–present</li>
+            <li>Published in a peer-reviewed journal</li>
             <li>Full text available in English</li>
           </ul>
           <p><strong>Exclude:</strong></p>
@@ -515,7 +515,7 @@ const CRIT_TIPS={
   diagnostic_accuracy:"Reports diagnostic accuracy metrics (AUC, sensitivity, specificity, or predictive values) against an established reference standard: amyloid PET, tau PET, CSF biomarkers, or neuropathology.",
   human_adult:"Study participants are adults — age > 18.",
   sample_size:"Total study sample size of at least 30 participants.",
-  peer_reviewed:"Published in a peer-reviewed journal between 2018 and the present.",
+  peer_reviewed:"Published in a peer-reviewed journal.",
   english:"Full text of the article is available in English.",
   review_only:"Review article, meta-analysis, editorial, commentary, or letter without original data.",
   conference_abstract:"Conference abstract not followed by a full peer-reviewed publication.",
